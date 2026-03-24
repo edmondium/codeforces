@@ -1,53 +1,43 @@
-#include <iostream>
-#include <string>
-#include <cctype>
+#include <bits/stdc++.h>
+#include <omp.h>
+using namespace std;
 
-std::string columnToLetters(int col) {
-    std::string result;
+auto columnToLetters = [](int col) {
+    string result;
     while (col > 0) {
-        col--; // Adjust for 1-based indexing
-        result = char('A' + (col % 26)) + result;
+        col--;
+        result.insert(result.begin(), char('A' + (col % 26)));
         col /= 26;
     }
     return result;
-}
+};
 
-int lettersToColumn(const std::string& letters) {
-    int col = 0;
-    for (char c : letters) {
-        col = col * 26 + (c - 'A' + 1);
-    }
-    return col;
-}
+auto lettersToColumn = [](const string& letters) {
+    return accumulate(letters.begin(), letters.end(), 0,
+        [](int acc, char c) { return acc * 26 + (c - 'A' + 1); });
+};
 
-void convertSpreadsheetNotation(const std::string& input) {
-    if (input[0] == 'R' && std::isdigit(input[1]) && input.find('C') != std::string::npos) {
-        // RXCY format
-        int row, col;
-        sscanf(input.c_str(), "R%dC%d", &row, &col);
-        std::cout << columnToLetters(col) << row << '\n';
+auto convert = [](const string& input) {
+    if (input[0] == 'R' && isdigit(input[1]) && input.find('C') != string::npos) {
+        auto cPos = input.find('C');
+        int row = stoi(input.substr(1, cPos - 1));
+        int col = stoi(input.substr(cPos + 1));
+        return columnToLetters(col) + to_string(row);
     } else {
-        // Excel-style format
-        std::string letters;
-        int row = 0;
-        for (char c : input) {
-            if (std::isalpha(c)) {
-                letters += c;
-            } else {
-                row = row * 10 + (c - '0');
-            }
-        }
-        std::cout << "R" << row << "C" << lettersToColumn(letters) << '\n';
+        string letters, digits;
+        for (char c : input) isalpha(c) ? letters.push_back(c) : digits.push_back(c);
+        return "R" + digits + "C" + to_string(lettersToColumn(letters));
     }
-}
+};
 
 int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
     int n;
-    std::cin >> n;
-    while (n--) {
-        std::string input;
-        std::cin >> input;
-        convertSpreadsheetNotation(input);
-    }
-    return 0;
+    cin >> n;
+    vector<string> inputs(n), outputs(n);
+    for (int i = 0; i < n; i++) cin >> inputs[i];
+    #pragma omp parallel for
+    for (int i = 0; i < n; i++) outputs[i] = convert(inputs[i]);
+    for (auto& out : outputs) cout << out << '\n';
 }
