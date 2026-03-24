@@ -1,55 +1,49 @@
-#include <iostream>
-#include <array>
-#include <cmath>
+#include <bits/stdc++.h>
 #include <format>
+#include <omp.h>
+using namespace std;
 
-typedef long long ll;
-using Point = std::array<double, 2>;
-using Triangle = std::array<Point, 3>;
+using Point = array<double,2>;
+using Triangle = array<Point,3>;
 
-double calculatorNumber(double a, double b) {
-    if (std::abs(b) <= 1e-2)
-        return a;
-    return calculatorNumber(b, std::fmod(a, b));
-}
+auto gcd_angle = [](double a, double b) {
+    function<double(double,double)> f = [&](double x,double y){
+        return fabs(y) <= 1e-2 ? x : f(y,fmod(x,y));
+    };
+    return f(a,b);
+};
 
-double calculatorDistance(const Point& p1, const Point& p2) {
-    return std::sqrt((p2[0] - p1[0]) * (p2[0] - p1[0]) + (p2[1] - p1[1]) * (p2[1] - p1[1]));
-}
+auto dist = [](const Point& p1,const Point& p2){
+    return hypot(p2[0]-p1[0],p2[1]-p1[1]);
+};
 
-int main() {
+int main(){
     Triangle point;
-    std::array<double, 3> dis, angle;
-    double p, sum = 0, area = 0, r, res;
+    array<double,3> dis,angle;
+    double sum=0,area,r,res;
+    res = acos(-1.0);
 
-    res = std::acos(-1.0);
+    for(auto& p:point) cin>>p[0]>>p[1];
 
-    for (auto& p : point) {
-        std::cin >> p[0] >> p[1];
+    #pragma omp parallel for reduction(+:sum)
+    for(int i=0;i<3;i++){
+        dis[i]=dist(point[i],point[(i+1)%3]);
+        sum+=dis[i];
     }
 
-    for (int i = 0; i < 3; i++) {
-        dis[i] = calculatorDistance(point[i], point[(i + 1) % 3]);
-        sum += dis[i];
+    double p=sum/2;
+    area=sqrt(p*(p-dis[0])*(p-dis[1])*(p-dis[2]));
+    r=(dis[0]*dis[1]*dis[2])/(4*area);
+
+    #pragma omp parallel for
+    for(int i=0;i<3;i++){
+        double v=1-dis[i]*dis[i]/(2*r*r);
+        v=clamp(v,-1.0,1.0);
+        angle[i]=acos(v);
     }
 
-    p = sum / 2;
-    area = std::sqrt(p * (p - dis[0]) * (p - dis[1]) * (p - dis[2]));
-    r = (dis[0] * dis[1] * dis[2]) / (4 * area);
+    angle[2]=2*res-angle[0]-angle[1];
+    for(int i=1;i<3;i++) angle[i]=gcd_angle(angle[i-1],angle[i]);
 
-    for (int i = 0; i < 3; i++) {
-        double value = 1 - dis[i] * dis[i] / (2 * r * r);
-        value = std::clamp(value, -1.0, 1.0);
-        angle[i] = std::acos(value);
-    }
-
-    angle[2] = 2 * res - angle[0] - angle[1];
-
-    for (int i = 1; i < 3; i++) {
-        angle[i] = calculatorNumber(angle[i - 1], angle[i]);
-    }
-
-    std::cout << std::format("{:.6f}\n", r * r * std::sin(angle[2]) * res / angle[2]);
-
-    return 0;
+    cout<<format("{:.6f}\n",r*r*sin(angle[2])*res/angle[2]);
 }
