@@ -1,42 +1,40 @@
-#include <iostream>
-#include <string>
-#include <cmath>
+#include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
+struct Pos { int x, y; };
+
+auto parse = [](string s) {
+    return Pos{ s[0] - 'a' + 1, s[1] - '0' };
+};
+
+auto step = [](Pos &p, const Pos &t) {
+    string move;
+    if (t.x > p.x) { move += 'R'; p.x++; }
+    else if (t.x < p.x) { move += 'L'; p.x--; }
+    if (t.y > p.y) { move += 'U'; p.y++; }
+    else if (t.y < p.y) { move += 'D'; p.y--; }
+    return move;
+};
+
 int main() {
-    string start, target;
-    cin >> start >> target;
-    
-    // Map chess notation to numeric coordinates
-    int sx = start[0] - 'a' + 1;
-    int sy = start[1] - '0';
-    int tx = target[0] - 'a' + 1;
-    int ty = target[1] - '0';
-    
-    int moves = max(abs(tx - sx), abs(ty - sy));
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string s, t;
+    cin >> s >> t;
+    Pos start = parse(s), target = parse(t);
+
+    int moves = max(abs(target.x - start.x), abs(target.y - start.y));
     cout << moves << "\n";
-    
-    // Construct each step ensuring horizontal letter is first
-    while (sx != tx || sy != ty) {
-        string move = "";
-        // Decide horizontal movement
-        if (tx > sx) {
-            move += "R";
-            sx++;
-        } else if (tx < sx) {
-            move += "L";
-            sx--;
-        }
-        // Decide vertical movement (appended after the horizontal letter)
-        if (ty > sy) {
-            move += "U";
-            sy++;
-        } else if (ty < sy) {
-            move += "D";
-            sy--;
-        }
-        cout << move << "\n";
-    }
-    
-    return 0;
+
+    vector<string> path;
+    path.reserve(moves);
+
+    while (start.x != target.x || start.y != target.y)
+        path.push_back(step(start, target));
+
+    #pragma omp parallel for
+    for (int i = 0; i < (int)path.size(); i++)
+        cout << path[i] << "\n";
 }
