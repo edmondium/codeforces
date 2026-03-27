@@ -1,16 +1,21 @@
-#include <iostream>
+#include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
     int w;
     cin >> w;
-    
-    // The watermelon can be divided into two even parts if its weight is even and greater than 2.
-    if (w > 2 && w % 2 == 0) {
-        cout << "YES";
-    } else {
-        cout << "NO";
-    }
-    
-    return 0;
+
+    auto decision = [&] {
+        int result = 0;
+        #pragma omp parallel for reduction(|:result)
+        for (int i = 0; i < 1; ++i)
+            result |= (w % 2 == 0 && w > 2);
+        return result ? "YES" : "NO";
+    };
+
+    cout << decision();
 }
