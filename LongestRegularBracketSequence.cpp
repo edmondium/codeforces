@@ -1,6 +1,5 @@
-#include <iostream>
-#include <stack>
-#include <string>
+#include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
@@ -9,41 +8,28 @@ int main() {
 
     string s;
     cin >> s;
-    int n = s.size();
+    int n = (int)s.size();
 
-    // A stack to store indices. We start with -1 as a sentinel.
-    stack<int> st;
-    st.push(-1);
-
+    vector<int> dp(n);
     int maxLength = 0;
-    long long count = 0;  // Use long long for counting occurrences
+    long long count = 0;
 
-    // Process each character in the string.
+    #pragma omp parallel for reduction(max:maxLength) reduction(+:count)
     for (int i = 0; i < n; i++) {
-        if (s[i] == '(') {
-            st.push(i);
-        } else { // When s[i] == ')'
-            st.pop();
-            if (st.empty()) {
-                // If stack is empty, push the current index as new start.
-                st.push(i);
-            } else {
-                int length = i - st.top();
-                if (length > maxLength) {
-                    maxLength = length;
+        if (s[i] == ')') {
+            int j = i - 1 - (i > 0 ? dp[i - 1] : 0);
+            if (j >= 0 && s[j] == '(') {
+                dp[i] = dp[i - 1] + 2 + (j > 0 ? dp[j - 1] : 0);
+                if (dp[i] > maxLength) {
+                    maxLength = dp[i];
                     count = 1;
-                } else if (length == maxLength) {
+                } else if (dp[i] == maxLength) {
                     count++;
                 }
             }
         }
     }
 
-    // According to the problem statement, if no valid substring found,
-    // the answer should be "0 1".
-    if (maxLength == 0) {
-        count = 1;
-    }
+    if (maxLength == 0) count = 1;
     cout << maxLength << " " << count << "\n";
-    return 0;
 }
