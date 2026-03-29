@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
@@ -6,35 +7,33 @@ int main() {
     cin.tie(nullptr);
 
     int n, m;
-    char president;
-    cin >> n >> m >> president;
+    char c;
+    cin >> n >> m >> c;
+    vector<string> room(n);
+    for (auto &row : room) cin >> row;
 
-    vector<string> office(n);
-    for (auto &row : office) {
-        cin >> row;
+    set<char> deputies;
+    #pragma omp parallel
+    {
+        set<char> local;
+        #pragma omp for collapse(2)
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                if (room[i][j] == c) {
+                    auto check = [&](int x, int y) {
+                        if (x >= 0 && x < n && y >= 0 && y < m) {
+                            char d = room[x][y];
+                            if (d != c && d != '.') local.insert(d);
+                        }
+                    };
+                    check(i-1, j);
+                    check(i+1, j);
+                    check(i, j-1);
+                    check(i, j+1);
+                }
+        #pragma omp critical
+        deputies.insert(local.begin(), local.end());
     }
 
-    // Offsets for up, right, down, left
-    array<pair<int,int>, 4> dirs{{{-1,0}, {0,1}, {1,0}, {0,-1}}};
-    set<char> neighbors;
-
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            if (office[i][j] != president) 
-                continue;
-
-            for (auto [di, dj] : dirs) {
-                int ni = i + di, nj = j + dj;
-                if (ni < 0 || ni >= n || nj < 0 || nj >= m) 
-                    continue;
-
-                char c = office[ni][nj];
-                if (c != '.' && c != president) 
-                    neighbors.insert(c);
-            }
-        }
-    }
-
-    cout << neighbors.size() << "\n";
-    return 0;
+    cout << deputies.size() << '\n';
 }
