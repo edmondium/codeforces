@@ -1,31 +1,23 @@
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+    array<int,4> v;
+    for (auto &x : v) cin >> x;
 
-    array<int, 4> a;
-    for (int i = 0; i < 4; ++i) {
-        cin >> a[i];
-    }
-    sort(a.begin(), a.end());
+    auto tr = [](int a,int b,int c){ return (a+b>c)&&(a+c>b)&&(b+c>a); };
+    auto seg = [](int a,int b,int c){ return (a==b+c)||(b==a+c)||(c==a+b); };
 
-    bool canTriangle = false, canSegment = false;
-    // Try every triple of sticks
-    for (int i = 0; i < 4; ++i) {
-        for (int j = i + 1; j < 4; ++j) {
-            for (int k = j + 1; k < 4; ++k) {
-                int x = a[i], y = a[j], z = a[k];
-                if      (x + y >  z) canTriangle = true;
-                else if (x + y == z) canSegment  = true;
+    bool normal = false, deg = false;
+
+    #pragma omp parallel for reduction(||:normal,deg)
+    for (int i=0;i<4;i++)
+        for (int j=i+1;j<4;j++)
+            for (int k=j+1;k<4;k++) {
+                normal = normal || tr(v[i],v[j],v[k]);
+                deg = deg || seg(v[i],v[j],v[k]);
             }
-        }
-    }
 
-    if      (canTriangle) cout << "TRIANGLE\n";
-    else if (canSegment)  cout << "SEGMENT\n";
-    else                  cout << "IMPOSSIBLE\n";
-
-    return 0;
+    cout << (normal ? "TRIANGLE" : deg ? "SEGMENT" : "IMPOSSIBLE") << '\n';
 }
