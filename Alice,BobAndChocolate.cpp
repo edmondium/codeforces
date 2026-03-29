@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
@@ -7,24 +8,23 @@ int main() {
 
     int n;
     cin >> n;
-    vector<long long> t(n);
-    for (auto &x : t) 
-        cin >> x;
+    vector<int> t(n);
+    #pragma omp parallel for
+    for (int i = 0; i < n; i++) cin >> t[i];
 
-    int i = 0, j = n - 1;
-    long long timeA = 0, timeB = 0;
-    int cntA = 0, cntB = 0;
+    int l = 0, r = n - 1;
+    long long timeAlice = 0, timeBob = 0;
+    int ateAlice = 0, ateBob = 0;
 
-    while (i <= j) {
-        if (timeA <= timeB) {
-            timeA += t[i++];
-            cntA++;
+    while (l <= r) {
+        if (timeAlice <= timeBob) {
+            timeAlice += t[l++];
+            ateAlice++;
         } else {
-            timeB += t[j--];
-            cntB++;
+            timeBob += t[r--];
+            ateBob++;
         }
     }
 
-    cout << cntA << " " << cntB << "\n";
-    return 0;
+    cout << ateAlice << " " << ateBob << "\n";
 }
