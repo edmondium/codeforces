@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
@@ -7,7 +8,7 @@ int main() {
 
     int t, m;
     cin >> t >> m;
-    vector<int> mem(m, 0);           // mem[i]=0 if free, else holds block-id
+    vector<int> mem(m, 0);
     unordered_map<int, pair<int,int>> blocks;
     int next_id = 1;
 
@@ -16,58 +17,48 @@ int main() {
         cin >> op;
         if (op == "alloc") {
             int n; cin >> n;
-            bool placed = false;
-            // scan for a free segment of length n
-            for (int i = 0; i + n <= m; ++i) {
+            atomic<int> pos(-1);
+            #pragma omp parallel for
+            for (int i = 0; i < m - n + 1; ++i) {
+                if (pos.load() != -1) continue;
                 bool ok = true;
-                for (int j = i; j < i + n; ++j) {
+                for (int j = i; j < i + n; ++j)
                     if (mem[j] != 0) { ok = false; break; }
-                }
-                if (!ok) continue;
-                // allocate
-                int id = next_id++;
-                for (int j = i; j < i + n; ++j) mem[j] = id;
-                blocks[id] = {i, n};
-                cout << id << "\n";
-                placed = true;
-                break;
+                if (ok) pos.store(i);
             }
-            if (!placed) {
+            if (pos.load() == -1) {
                 cout << "NULL\n";
+            } else {
+                int id = next_id++;
+                ranges::for_each(views::iota(pos.load(), pos.load() + n),
+                    [&](int j){ mem[j] = id; });
+                blocks[id] = {pos.load(), n};
+                cout << id << "\n";
             }
-
         } else if (op == "erase") {
             int id; cin >> id;
-            auto it = blocks.find(id);
-            if (it == blocks.end()) {
+            if (!blocks.contains(id)) {
                 cout << "ILLEGAL_ERASE_ARGUMENT\n";
             } else {
-                auto [st, len] = it->second;
-                for (int j = st; j < st + len; ++j)
-                    mem[j] = 0;
-                blocks.erase(it);
+                auto [st, len] = blocks[id];
+                ranges::for_each(views::iota(st, st + len),
+                    [&](int j){ mem[j] = 0; });
+                blocks.erase(id);
             }
-
         } else if (op == "defragment") {
             vector<int> newmem(m, 0);
-            // gather blocks in increasing order of their current start
-            vector<pair<int,int>> order; // (old start, id)
-            for (auto &b : blocks)
-                order.emplace_back(b.second.first, b.first);
-            sort(order.begin(), order.end());
-
+            vector<pair<int,int>> order;
+            for (auto &b : blocks) order.emplace_back(b.second.first, b.first);
+            ranges::sort(order);
             int cur = 0;
             for (auto &[old_st, id] : order) {
                 auto [_, len] = blocks[id];
-                // move block to new position
-                for (int j = 0; j < len; ++j)
-                    newmem[cur + j] = id;
-                blocks[id].first = cur;  // update start
+                ranges::for_each(views::iota(0, len),
+                    [&](int j){ newmem[cur + j] = id; });
+                blocks[id].first = cur;
                 cur += len;
             }
             mem.swap(newmem);
         }
     }
-
-    return 0;
 }
