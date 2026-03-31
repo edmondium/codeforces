@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
 int main() {
@@ -9,20 +10,21 @@ int main() {
     cin >> T >> A >> B;
 
     auto check = [&](const string &S) {
-        size_t p1 = S.find(A);
-        if (p1 == string::npos) return false;
-        size_t p2 = S.find(B, p1 + A.size());
-        return p2 != string::npos;
+        return [&] {
+            size_t p1 = S.find(A);
+            return p1 != string::npos && S.find(B, p1 + A.size()) != string::npos;
+        }();
     };
 
-    bool fwd = check(T);
-    reverse(T.begin(), T.end());
-    bool bwd = check(T);
+    bool fwd = false, bwd = false;
 
-    if (fwd && bwd)      cout << "both\n";
-    else if (fwd)        cout << "forward\n";
-    else if (bwd)        cout << "backward\n";
-    else                 cout << "fantasy\n";
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        { fwd = check(T); }
+        #pragma omp section
+        { string R = T; reverse(R.begin(), R.end()); bwd = check(R); }
+    }
 
-    return 0;
+    cout << (fwd && bwd ? "both" : fwd ? "forward" : bwd ? "backward" : "fantasy") << '\n';
 }
