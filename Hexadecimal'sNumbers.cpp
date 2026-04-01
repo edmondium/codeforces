@@ -1,5 +1,8 @@
 #include <bits/stdc++.h>
+#include <ranges>
+#include <omp.h>
 using namespace std;
+
 using ll = long long;
 
 int main() {
@@ -9,35 +12,22 @@ int main() {
     ll n;
     cin >> n;
 
-    // Special case:
-    if (n < 1) {
-        cout << 0 << "\n";
-        return 0;
-    }
-
+    vector<ll> nums{1};
     ll count = 0;
-    queue<ll> q;
-    q.push(1);
 
-    while (!q.empty()) {
-        ll x = q.front(); 
-        q.pop();
-
-        if (x > n) 
-            continue;
-        // x is a valid “0/1-digit” number ≤ n
-        ++count;
-
-        // Try to append a 0 or 1 in decimal:
-        // x * 10  and  x * 10 + 1
-        if (x * 10 <= n) {
-            q.push(x * 10);
+    while (!nums.empty()) {
+        vector<ll> next;
+        #pragma omp parallel for reduction(+:count)
+        for (size_t i = 0; i < nums.size(); ++i) {
+            ll x = nums[i];
+            if (x <= n) {
+                ++count;
+                if (x * 10 <= n) next.push_back(x * 10);
+                if (x * 10 + 1 <= n) next.push_back(x * 10 + 1);
+            }
         }
-        if (x * 10 + 1 <= n) {
-            q.push(x * 10 + 1);
-        }
+        nums = move(next);
     }
 
     cout << count << "\n";
-    return 0;
 }
