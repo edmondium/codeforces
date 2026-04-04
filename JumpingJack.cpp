@@ -1,7 +1,8 @@
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 
-int main(){
+int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
@@ -10,12 +11,14 @@ int main(){
     long long t = llabs(x);
 
     long long k = 0, S = 0;
-    // Keep going until S >= t and parity matches
-    while (S < t || ((S - t) & 1)){
+    while (S < t || ((S - t) & 1)) {
         ++k;
-        S += k;
+        #pragma omp parallel reduction(+:S)
+        {
+            #pragma omp single
+            S += k;
+        }
     }
 
-    cout << k << "\n";
-    return 0;
+    cout << k << '\n';
 }
