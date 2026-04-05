@@ -1,37 +1,32 @@
 #include <bits/stdc++.h>
+#include <ranges>
 using namespace std;
 
-int main(){
+int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
     string s, t;
     cin >> s >> t;
 
-    // Count digits of n
     array<int,10> cnt{};
-    for(char c : s) cnt[c - '0']++;
+    for (char c : s) cnt[c - '0']++;
 
-    // Build minimal permutation
     string minimal;
-    if(s == "0"){
+    if (s == "0") {
         minimal = "0";
     } else {
-        // pick smallest nonzero to lead
-        for(int d = 1; d <= 9; d++){
-            if(cnt[d] > 0){
-                minimal.push_back(char('0' + d));
-                cnt[d]--;
-                break;
-            }
+        int lead = ranges::find_if(views::iota(1,10), [&](int d){ return cnt[d] > 0; })[0];
+        minimal.push_back(char('0' + lead));
+        cnt[lead]--;
+
+        vector<char> rest;
+        #pragma acc parallel loop copyin(cnt)
+        for (int d = 0; d <= 9; d++) {
+            rest.insert(rest.end(), cnt[d], char('0' + d));
         }
-        // append all remaining digits ascending
-        for(int d = 0; d <= 9; d++){
-            minimal.append(cnt[d], char('0' + d));
-        }
+        minimal.append(rest.begin(), rest.end());
     }
 
-    // Check Bob's answer (as raw string)
     cout << (t == minimal ? "OK\n" : "WRONG_ANSWER\n");
-    return 0;
 }
