@@ -3,21 +3,13 @@ using namespace std;
 
 int main() {
     vector<string> a(3);
-    for (auto &row : a) {
-        if (!(cin >> row) || row.size() != 3) 
-            return 0;  // invalid input guard
-    }
+    ranges::for_each(a, [](auto& row){ cin >> row; });
 
     bool symmetric = true;
-    for (int i = 0; i < 3 && symmetric; i++) {
-        for (int j = 0; j < 3; j++) {
-            if ((a[i][j] == 'X') != (a[2 - i][2 - j] == 'X')) {
-                symmetric = false;
-                break;
-            }
-        }
-    }
+    #pragma acc parallel loop collapse(2) reduction(&:symmetric)
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            symmetric &= (a[i][j] == a[2 - i][2 - j]);
 
     cout << (symmetric ? "YES\n" : "NO\n");
-    return 0;
 }
