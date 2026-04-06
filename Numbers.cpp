@@ -1,29 +1,33 @@
 #include <bits/stdc++.h>
+#include <numeric>
 using namespace std;
-using ll = long long;
 
-ll gcd(ll a, ll b) {
-    return b ? gcd(b, a % b) : a;
-}
+using i64 = long long;
 
-int main(){
+auto digit_sum = [](int A, int b) {
+    int x = A;
+    i64 s = 0;
+    while (x) {
+        s += x % b;
+        x /= b;
+    }
+    return s;
+};
+
+int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
     int A;
     cin >> A;
 
-    ll totalSum = 0;
-    for(int b = 2; b <= A - 1; ++b){
-        int x = A;
-        while(x){
-            totalSum += x % b;
-            x /= b;
-        }
+    i64 totalSum = 0;
+    #pragma omp parallel for reduction(+:totalSum)
+    for (int b = 2; b <= A - 1; ++b) {
+        totalSum += digit_sum(A, b);
     }
 
-    ll cnt = A - 2;
-    ll g = gcd(totalSum, cnt);
+    i64 cnt = A - 2;
+    i64 g = std::gcd(totalSum, cnt);
     cout << (totalSum / g) << "/" << (cnt / g) << "\n";
-    return 0;
 }
