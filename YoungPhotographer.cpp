@@ -9,25 +9,24 @@ int main() {
     long long x0;
     cin >> n >> x0;
 
-    long long L = 0, R = 1000;  
-    // since 0 ≤ aᵢ,bᵢ ≤ 1000
-    for (int i = 0; i < n; i++) {
-        long long a, b;
+    vector<pair<long long,long long>> seg(n);
+    for (auto& [a,b] : seg) {
         cin >> a >> b;
-        if (a > b) swap(a, b);
-        L = max(L, a);
-        R = min(R, b);
+        if (a > b) swap(a,b);
     }
 
-    if (L > R) {
-        cout << -1 << "\n";
-    } else if (x0 < L) {
-        cout << (L - x0) << "\n";
-    } else if (x0 > R) {
-        cout << (x0 - R) << "\n";
-    } else {
-        cout << 0 << "\n";
+    long long L = LLONG_MIN, R = LLONG_MAX;
+
+    #pragma acc parallel loop reduction(max:L) reduction(min:R)
+    for (int i = 0; i < n; i++) {
+        L = max(L, seg[i].first);
+        R = min(R, seg[i].second);
     }
 
-    return 0;
+    long long ans =
+        (L > R) ? -1 :
+        (x0 < L ? L - x0 :
+        (x0 > R ? x0 - R : 0));
+
+    cout << ans;
 }
