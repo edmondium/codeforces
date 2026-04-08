@@ -2,21 +2,18 @@
 using namespace std;
 using u64 = unsigned long long;
 
-// XOR of [0..t]
-u64 prefix_xor(u64 t) {
+auto prefix_xor = [](u64 t) {
     switch (t & 3ULL) {
         case 0: return t;
-        case 1: return 1;
-        case 2: return t + 1;
-        default: return 0;
+        case 1: return 1ULL;
+        case 2: return t + 1ULL;
+        default: return 0ULL;
     }
-}
+};
 
-// XOR of [l..r]
-u64 range_xor(u64 l, u64 r) {
-    if (l > r) return 0;
-    return prefix_xor(r) ^ prefix_xor(l - 1);
-}
+auto range_xor = [](u64 l, u64 r) {
+    return (l > r) ? 0ULL : (prefix_xor(r) ^ prefix_xor(l - 1));
+};
 
 int main() {
     ios::sync_with_stdio(false);
@@ -24,14 +21,14 @@ int main() {
 
     int n;
     cin >> n;
+    vector<pair<u64,u64>> quarries(n);
+    for (auto& [x,m] : quarries) cin >> x >> m;
 
     u64 total_nim = 0;
+    #pragma acc parallel loop reduction(^:total_nim)
     for (int i = 0; i < n; i++) {
-        u64 x, m;
-        cin >> x >> m;
-        total_nim ^= range_xor(x, x + m - 1);
+        total_nim ^= range_xor(quarries[i].first, quarries[i].first + quarries[i].second - 1);
     }
 
     cout << (total_nim ? "tolik\n" : "bolik\n");
-    return 0;
 }
