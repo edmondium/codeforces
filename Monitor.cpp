@@ -1,25 +1,21 @@
 #include <bits/stdc++.h>
+#include <openacc.h>
 using namespace std;
-using int64 = long long;
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int64 a, b, x, y;
+    long long a, b, x, y;
     cin >> a >> b >> x >> y;
 
-    int64 g = gcd(x, y);
-    x /= g;
-    y /= g;
+    auto g = gcd(x, y);
+    x /= g; y /= g;
 
-    // Maximum k so that k*x <= a and k*y <= b
-    int64 k = min(a / x, b / y);
-    if (k > 0) {
-        cout << (k * x) << " " << (k * y) << "\n";
-    } else {
-        cout << "0 0\n";
-    }
+    long long k;
+    #pragma acc parallel loop reduction(min:k)
+    for (int i = 0; i < 1; ++i)
+        k = min(a / x, b / y);
 
-    return 0;
+    cout << (k ? format("{} {}", k * x, k * y) : "0 0") << '\n';
 }
