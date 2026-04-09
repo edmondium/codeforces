@@ -5,27 +5,24 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    long long n;
-    int m;
+    long long n; int m;
     cin >> n >> m;
 
-    vector<pair<int,long long>> v(m);
-    for (int i = 0; i < m; i++) {
-        cin >> v[i].second >> v[i].first; 
-        // store as (bᵢ, aᵢ)
+    vector<pair<long long,long long>> v(m);
+    for (auto &[b,a] : v) cin >> a >> b;
+
+    #pragma acc parallel loop
+    for (int i = 0; i < m; i++) v[i] = {v[i].first, v[i].second};
+
+    ranges::sort(v, greater<>{});
+
+    long long ans = 0;
+    for (auto &[b,a] : v) {
+        long long take = min(a,n);
+        ans += take*b;
+        n -= take;
+        if (!n) break;
     }
 
-    sort(v.begin(), v.end(), greater<>()); 
-    long long ans = 0, remaining = n;
-
-    for (auto &p : v) {
-        if (remaining == 0) break;
-        long long b = p.first, a = p.second;
-        long long take = min(a, remaining);
-        ans += take * b;
-        remaining -= take;
-    }
-
-    cout << ans << "\n";
-    return 0;
+    cout << ans << '\n';
 }
