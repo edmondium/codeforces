@@ -8,28 +8,20 @@ int main() {
     int n, m;
     cin >> n >> m;
 
-    vector<char> row_color(n);
-    string s;
+    vector<string> grid(n);
+    for (auto& row : grid) cin >> row;
+
+    bool uniform = true;
+    #pragma acc parallel loop reduction(&:uniform)
     for (int i = 0; i < n; i++) {
-        cin >> s;
-        // Check row uniformity
-        for (int j = 1; j < m; j++) {
-            if (s[j] != s[0]) {
-                cout << "NO\n";
-                return 0;
-            }
-        }
-        row_color[i] = s[0];
+        uniform &= ranges::all_of(grid[i], [&](char c){ return c == grid[i][0]; });
     }
 
-    // Check adjacent rows differ
+    bool adjacent = true;
+    #pragma acc parallel loop reduction(&:adjacent)
     for (int i = 1; i < n; i++) {
-        if (row_color[i] == row_color[i - 1]) {
-            cout << "NO\n";
-            return 0;
-        }
+        adjacent &= (grid[i][0] != grid[i-1][0]);
     }
 
-    cout << "YES\n";
-    return 0;
+    cout << (uniform && adjacent ? "YES\n" : "NO\n");
 }
