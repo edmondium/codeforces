@@ -1,53 +1,38 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-int main(){
+int main() {
     ios::sync_with_stdio(false);
-    cin.tie(NULL);
+    cin.tie(nullptr);
 
     int n;
     cin >> n;
-    vector<vector<double>> a(n, vector<double>(n));
-    for(int i = 0; i < n; i++)
-      for(int j = 0; j < n; j++)
-        cin >> a[i][j];
+    static double a[18][18];
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            cin >> a[i][j];
 
-    int N = 1<<n;
-    vector<double> dp(N, 0.0);
-    dp[N-1] = 1.0;
+    int N = 1 << n;
+    static double dp[1 << 18];
+    static int pc[1 << 18];
+    dp[N - 1] = 1.0;
+    for (int m = 1; m < N; m++) pc[m] = pc[m >> 1] + (m & 1);
 
-    // Precompute popcounts for all masks
-    vector<int> pc(N);
-    for(int m = 1; m < N; m++)
-        pc[m] = pc[m>>1] + (m&1);
-
-    // Process masks in decreasing order of popcount
-    for(int mask = N-1; mask >= 0; mask--){
+    #pragma acc parallel loop copy(dp[0:N], pc[0:N], a[0:n][0:n])
+    for (int mask = N - 1; mask >= 0; mask--) {
         int k = pc[mask];
-        if(k < 2) continue;
-
-        double pairs = k*(k-1)/2.0;
-        double Pmeet = 1.0 / pairs;
-
-        // Enumerate all i<j inside mask
-        for(int i = 0; i < n; i++){
-            if(!(mask & (1<<i))) continue;
-            for(int j = i+1; j < n; j++){
-                if(!(mask & (1<<j))) continue;
-
-                int m_without_j = mask ^ (1<<j);
-                dp[m_without_j] += dp[mask] * Pmeet * a[i][j];
-
-                int m_without_i = mask ^ (1<<i);
-                dp[m_without_i] += dp[mask] * Pmeet * a[j][i];
+        if (k < 2) continue;
+        double Pmeet = 1.0 / (k * (k - 1) / 2.0);
+        for (int i = 0; i < n; i++) if (mask & (1 << i))
+            for (int j = i + 1; j < n; j++) if (mask & (1 << j)) {
+                int mj = mask & ~(1 << j);
+                int mi = mask & ~(1 << i);
+                dp[mj] += dp[mask] * Pmeet * a[i][j];
+                dp[mi] += dp[mask] * Pmeet * a[j][i];
             }
-        }
     }
 
-    // Output answer: probability fish i is last => mask == (1<<i)
     cout << fixed << setprecision(6);
-    for(int i = 0; i < n; i++){
-        cout << dp[1<<i] << (i+1==n? '\n' : ' ');
-    }
-    return 0;
+    for (int i = 0; i < n; i++)
+        cout << dp[1 << i] << (i + 1 == n ? '\n' : ' ');
 }
